@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="CIDR_Calculator/CIDR_Calculator.vcxproj" Id="f6ad971b-da60-40d3-bbda-8b06fc4d1510" />
+</Solution>
