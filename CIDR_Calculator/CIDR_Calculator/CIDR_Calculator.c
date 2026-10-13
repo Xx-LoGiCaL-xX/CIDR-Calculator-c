@@ -10,9 +10,9 @@ void set_network_mask(int* net_mask, int suffix);
 void obtain_network_ip(int* net_mask, int* network_ip, int* original);
 void input_format_check(int* ipaddress, int prefix);
 void init_range_data(struct cidr_range* cidr);
+void deallocate_space(struct cidr_range* cidr);
 
 struct cidr_range {
-    //int range_octets[4];
     int* range_octets;
     int* broadcast_address;
     int* network_ip_address;
@@ -108,6 +108,8 @@ int main(void)
         ? c_range.total_ips - 2  // subtract network and broadcast and test for Point-to-Point Link Exception (RFC 3021)
         : c_range.total_ips);
 
+    deallocate_space(&c_range);
+
 
     return 0;
 
@@ -155,7 +157,6 @@ void obtain_network_ip(int* net_mask, int* network_ip, int* original)
 
 }
 
-#pragma optimize("", off)
 void input_format_check(int* ipaddress, int prefix)
 {
     if (prefix < 0 || prefix > 32)
@@ -173,7 +174,6 @@ void input_format_check(int* ipaddress, int prefix)
     }
 
 }
-#pragma optimize("", on)
 
 void init_range_data(struct cidr_range* cidr)
 {
@@ -193,4 +193,14 @@ void init_range_data(struct cidr_range* cidr)
     memset(cidr->last_usable_ip_address, 0, 4 * sizeof *cidr->last_usable_ip_address);
     memset(cidr->network_mask, 0, 4 * sizeof * cidr->network_mask);
 
+}
+
+void deallocate_space(struct cidr_range* cidr)
+{
+    free(cidr->range_octets);
+    free(cidr->broadcast_address);
+    free(cidr->network_ip_address);
+    free(cidr->first_usable_ip_address);
+    free(cidr->last_usable_ip_address);
+    free(cidr->network_mask);
 }
