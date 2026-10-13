@@ -160,7 +160,6 @@ void obtain_network_ip(uint8_t* net_mask, uint8_t* network_ip, uint8_t* original
 
 }
 
-#pragma optimize("", off)
 void input_format_check(uint8_t* ipaddress, uint8_t prefix)
 {
     if (prefix < 1 || prefix > 32)
@@ -178,4 +177,3 @@ void input_format_check(uint8_t* ipaddress, uint8_t prefix)
     }
 
 }
-#pragma optimize("", off)
