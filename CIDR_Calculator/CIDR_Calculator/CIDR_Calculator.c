@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 
@@ -8,47 +9,104 @@ void decimal2ip(long long int decimal_ip, int* ip);
 void set_network_mask(int* net_mask, int suffix);
 void obtain_network_ip(int* net_mask, int* network_ip, int* original);
 void input_format_check(int* ipaddress, int prefix);
+void init_range_data(struct cidr_range* cidr);
 
-
+struct cidr_range {
+    //int range_octets[4];
+    int* range_octets;
+    int* broadcast_address;
+    int* network_ip_address;
+    int* first_usable_ip_address;
+    int* last_usable_ip_address;
+    int* network_mask;
+    int prefix;
+    unsigned long long int network_decimal;
+    unsigned long long int broadcast_decimal;
+    unsigned long long int first_available_decimal;
+    unsigned long long int last_available_decimal;
+    unsigned long long int total_ips;    
+};
 
 int main(void)
 {
-    int ip_octets[4] = { 0 }, prefix = 0, broadcast_address[4] = { 0 }, network_ip_address[4] = { 0 }, first_usable_ip_address[4] = {0}, last_usable_ip_address[4] = {0};
-    unsigned long long int network_decimal, broadcast_decimal, first_available_decimal, last_available_decimal;
-    unsigned long long int total_ips;
-    int network_mask[4] = { 0 };
-        
+    struct cidr_range c_range;
+    init_range_data(&c_range);
 
+    //prompt for initial cidr range octets and parse values
     printf_s("Enter the IP adress with prefix length (e.g., 192.168.10.0/24): ");
-    scanf_s("%hu.%hu.%hu.%hu/%hu", &ip_octets[0], &ip_octets[1], &ip_octets[2], &ip_octets[3], &prefix);  //format specifier for unsigned short: h = short & u = unsigned
+    scanf_s("%d.%d.%d.%d/%d",
+        &c_range.range_octets[0],
+        &c_range.range_octets[1],
+        &c_range.range_octets[2],
+        &c_range.range_octets[3],
+        &c_range.prefix
+    );
 
     //format check, exit if fail
-    input_format_check(ip_octets, prefix);
+    input_format_check(c_range.range_octets, c_range.prefix);
 
     //obtain subnetmask and network address
-    set_network_mask(network_mask, prefix);
-    obtain_network_ip(network_mask, network_ip_address, ip_octets);
+    set_network_mask(c_range.network_mask, c_range.prefix);
+    obtain_network_ip(c_range.network_mask, c_range.network_ip_address, c_range.range_octets);
 
     //obtain total ips, network decimal, broadcast decimal,
     //first available decimal, and last available decimal
-    total_ips = pow(2, 32 - prefix);    // form obtained from https://subnetplus.com/cidr-cheat-sheet.html
-    network_decimal = ip2decimal(network_ip_address);
-    broadcast_decimal = (network_decimal + total_ips) - 1;
-    first_available_decimal = (network_decimal + 1 < broadcast_decimal) ? network_decimal + 1: network_decimal;    // test for Point-to-Point Link Exception (RFC 3021)
-    last_available_decimal = (broadcast_decimal - 1 > network_decimal) ? broadcast_decimal - 1: broadcast_decimal; // test for Point-to-Point Link Exception (RFC 3021)
+    c_range.total_ips = pow(2, 32 - c_range.prefix);    // form obtained from https://subnetplus.com/cidr-cheat-sheet.html
+    c_range.network_decimal = ip2decimal(c_range.network_ip_address);
+    c_range.broadcast_decimal = (c_range.network_decimal + c_range.total_ips) - 1;  
+
+    c_range.first_available_decimal = (c_range.network_decimal + 1 < c_range.broadcast_decimal)  // test for Point-to-Point Link Exception (RFC 3021)
+        ? c_range.network_decimal + 1
+        : c_range.network_decimal;
+
+    c_range.last_available_decimal = (c_range.broadcast_decimal - 1 > c_range.network_decimal)   // test for Point-to-Point Link Exception (RFC 3021)
+        ? c_range.broadcast_decimal - 1
+        : c_range.broadcast_decimal;
 
     // obtain broadcast, first available, last available IP addressess
-    decimal2ip(broadcast_decimal, broadcast_address);
-    decimal2ip(first_available_decimal, first_usable_ip_address);
-    decimal2ip(last_available_decimal, last_usable_ip_address);
+    decimal2ip(c_range.broadcast_decimal, c_range.broadcast_address);
+    decimal2ip(c_range.first_available_decimal, c_range.first_usable_ip_address);
+    decimal2ip(c_range.last_available_decimal, c_range.last_usable_ip_address);
 
-    // print out calculated results   
-    printf_s("\n\nNetwork Address: %d.%d.%d.%d\n", network_ip_address[0], network_ip_address[1], network_ip_address[2], network_ip_address[3]);
-    printf_s("Broadcast Address: %d.%d.%d.%d\n", broadcast_address[0], broadcast_address[1], broadcast_address[2], broadcast_address[3]);
-    printf_s("Subnet mast: %d.%d.%d.%d\n", network_mask[0], network_mask[1], network_mask[2], network_mask[3]);
-    printf_s("First usable host: %d.%d.%d.%d\n", first_usable_ip_address[0], first_usable_ip_address[1], first_usable_ip_address[2], first_usable_ip_address[3]);
-    printf_s("Last usable host: %d.%d.%d.%d\n", last_usable_ip_address[0], last_usable_ip_address[1], last_usable_ip_address[2], last_usable_ip_address[3]);
-    printf_s("Total usable addresses: %llu\n", (total_ips > 2) ? total_ips - 2 : total_ips);  // subtract network and broadcast and test for Point-to-Point Link Exception (RFC 3021)
+    // print out calculated results       
+    printf_s("\n\nNetwork Address: %d.%d.%d.%d\n",
+        c_range.network_ip_address[0],
+        c_range.network_ip_address[1],
+        c_range.network_ip_address[2],
+        c_range.network_ip_address[3]
+    );
+   
+    printf_s("Broadcast Address: %d.%d.%d.%d\n",
+        c_range.broadcast_address[0],
+        c_range.broadcast_address[1],
+        c_range.broadcast_address[2],
+        c_range.broadcast_address[3]
+    );
+    
+    printf_s("Subnet mast: %d.%d.%d.%d\n",
+        c_range.network_mask[0],
+        c_range.network_mask[1],
+        c_range.network_mask[2],
+        c_range.network_mask[3]
+    );
+    
+    printf_s("First usable host: %d.%d.%d.%d\n",
+        c_range.first_usable_ip_address[0],
+        c_range.first_usable_ip_address[1],
+        c_range.first_usable_ip_address[2],
+        c_range.first_usable_ip_address[3]
+    );
+    
+    printf_s("Last usable host: %d.%d.%d.%d\n",
+        c_range.last_usable_ip_address[0],
+        c_range.last_usable_ip_address[1],
+        c_range.last_usable_ip_address[2],
+        c_range.last_usable_ip_address[3]
+    );
+
+    printf_s("Total usable addresses: %llu\n", (c_range.total_ips > 2)
+        ? c_range.total_ips - 2  // subtract network and broadcast and test for Point-to-Point Link Exception (RFC 3021)
+        : c_range.total_ips);
 
 
     return 0;
@@ -81,8 +139,6 @@ void decimal2ip(long long int decimal_ip, int* ip)
 
 void set_network_mask(int* net_mask, int prefix)
 {
-    const int base_network_mask[4] = { 255, 255, 255, 255 };
-    const long long int base_mask_decimal = 4294967295;
     long long int network_mask_decimal = (prefix == 0) ? 0 : (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF;
 
     decimal2ip(network_mask_decimal, net_mask);
@@ -99,6 +155,7 @@ void obtain_network_ip(int* net_mask, int* network_ip, int* original)
 
 }
 
+#pragma optimize("", off)
 void input_format_check(int* ipaddress, int prefix)
 {
     if (prefix < 0 || prefix > 32)
@@ -114,5 +171,26 @@ void input_format_check(int* ipaddress, int prefix)
             exit(0);
         }
     }
+
+}
+#pragma optimize("", on)
+
+void init_range_data(struct cidr_range* cidr)
+{
+    // allocate memory for ip arrays
+    cidr->range_octets = malloc(4 * sizeof(int));
+    cidr->broadcast_address = malloc(4 * sizeof(int));
+    cidr->network_ip_address = malloc(4 * sizeof(int));
+    cidr->first_usable_ip_address = malloc(4 * sizeof(int));
+    cidr->last_usable_ip_address = malloc(4 * sizeof(int));
+    cidr->network_mask = malloc(4 * sizeof(int));
+
+    //  set values or arrays to 0
+    memset(cidr->range_octets, 0, 4 * sizeof *cidr->range_octets);    
+    memset(cidr->broadcast_address, 0, 4 * sizeof *cidr->broadcast_address);
+    memset(cidr->network_ip_address, 0, 4 * sizeof *cidr->network_ip_address);
+    memset(cidr->first_usable_ip_address, 0, 4 * sizeof *cidr->first_usable_ip_address);
+    memset(cidr->last_usable_ip_address, 0, 4 * sizeof *cidr->last_usable_ip_address);
+    memset(cidr->network_mask, 0, 4 * sizeof * cidr->network_mask);
 
 }
