@@ -31,8 +31,10 @@ int main(void)
     struct cidr_range c_range;
 
     //set network mask to all 0's since it's required
-    //to calculate the correct mask
+    //to calculate the correct mask. Also, do the same
+    //with prefix.
     memset(c_range.network_mask, 0, 4 * sizeof(uint8_t));
+    c_range.prefix = 0;
 
     //prompt for initial cidr range octets and parse values
     printf_s("Enter the IP adress with prefix length (e.g., 192.168.10.0/24): ");
@@ -158,9 +160,10 @@ void obtain_network_ip(uint8_t* net_mask, uint8_t* network_ip, uint8_t* original
 
 }
 
+#pragma optimize("", off)
 void input_format_check(uint8_t* ipaddress, uint8_t prefix)
 {
-    if (prefix < 0 || prefix > 32)
+    if (prefix < 1 || prefix > 32)
     {
         printf_s("\nIncorrect CIDR prefix range format.\nPlease follow this format example: 192.168.100.0/24\n");
         exit(0);
@@ -175,4 +178,4 @@ void input_format_check(uint8_t* ipaddress, uint8_t prefix)
     }
 
 }
-
+#pragma optimize("", off)
